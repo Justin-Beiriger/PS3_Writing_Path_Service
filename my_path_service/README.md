@@ -12,3 +12,4 @@ The STDR robot environment was first launched, then the path service was initial
     
 The video file showing the demo can be found at the following link:
 
+https://youtu.be/gq2B30Ybt_s
