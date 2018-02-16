@@ -1,4 +1,4 @@
-//path_service:
+ //path_service:
 // example showing how to receive a nav_msgs/Path request
 // run with complementary path_client
 // responds immediately to ack new path...but execution takes longer
@@ -115,14 +115,26 @@ void do_halt() {
 //FROM START TO GOAL
 void get_yaw_and_dist(geometry_msgs::Pose current_pose, geometry_msgs::Pose goal_pose,double &dist, double &heading) {
  
- dist = 0.0; //FALSE!!
- if (dist < g_dist_tol) { //too small of a motion, so just set the heading from goal heading
-   heading = convertPlanarQuat2Phi(goal_pose.orientation); 
- }
- else {
-    heading = 0.0; //FALSE!!
- }
-
+    // store the initial and final (x,y) positions
+    double x_start, y_start, x_goal, y_goal;
+    
+    x_start = current_pose.position.x;
+    y_start = current_pose.position.y;
+    x_goal = goal_pose.position.x;
+    y_goal = goal_pose.position.y;
+    
+    // store the required travel distance in each direction
+    double dx, dy;
+    
+    dx = x_goal - x_start;
+    dy = y_goal - y_start;
+    
+    dist = sqrt(dx*dx + dy*dy);
+    
+    if (dist < g_dist_tol)
+        heading = convertPlanarQuat2Phi(goal_pose.orientation); 
+    else 
+        heading = atan2(dy,dx);
 }
 
 
@@ -138,30 +150,33 @@ bool callback(example_ros_service::PathSrvRequest& request, example_ros_service:
         // odd notation: drill down, access vector element, drill some more to get pose
         pose_desired = request.nav_path.poses[i].pose; //get next pose from vector of poses
         
-        //WRITE THIS FNC: compute desired heading and travel distance based on current and desired poses
-        //get_yaw_and_dist(g_current_pose, pose_desired,travel_distance, yaw_desired);
-        //ROS_INFO("pose %d: desired yaw = %f; desired (x,y) = (%f,%f)",i,yaw_desired,
-        //   pose_desired.position.x,pose_desired.position.y); 
-        //ROS_INFO("current (x,y) = (%f, %f)",g_current_pose.position.x,g_current_pose.position.y);
-        //ROS_INFO("travel distance = %f",travel_distance);         
-        
+        // get desired heading and distance based on given poses 
+        get_yaw_and_dist(g_current_pose, pose_desired,travel_distance, yaw_desired);
+        ROS_INFO("pose %d: desired yaw = %f; desired (x,y) = (%f,%f)",i,yaw_desired,
+           pose_desired.position.x,pose_desired.position.y); 
+        ROS_INFO("current (x,y) = (%f, %f)",g_current_pose.position.x,g_current_pose.position.y);
+        ROS_INFO("travel distance = %f",travel_distance);         
         
         // a quaternion is overkill for navigation in a plane; really only need a heading angle
         // this yaw is measured CCW from x-axis
-        // GET RID OF NEXT LINE AFTER FIXING get_yaw_and_dist()
-        yaw_desired = convertPlanarQuat2Phi(pose_desired.orientation); //from i'th desired pose
         
-        ROS_INFO("pose %d: desired yaw = %f",i,yaw_desired);        
+        ROS_INFO("pose %d: desired yaw = %f",i,yaw_desired);   
         yaw_current = convertPlanarQuat2Phi(g_current_pose.orientation); //our current yaw--should use a sensor
         spin_angle = yaw_desired - yaw_current; // spin this much
         spin_angle = min_spin(spin_angle);// but what if this angle is > pi?  then go the other way
         do_spin(spin_angle); // carry out this incremental action
-        // we will just assume that this action was successful--really should have sensor feedback here
-        g_current_pose.orientation = pose_desired.orientation; // assumes got to desired orientation precisely
+        yaw_current = yaw_current + spin_angle;
+        // move forward according to calculated distance
+        do_move(travel_distance);
         
-        //FIX THE NEXT LINE, BASED ON get_yaw_and_dist()
-        do_move(1.0);  // move forward 1m...just for illustration; SHOULD compute this from subgoal pose
+        // spin to match the prescribed heading
+        spin_angle = convertPlanarQuat2Phi(pose_desired.orientation) - yaw_current;
+        do_spin(spin_angle);
+        
+        // update current pose to remember where we are
+        g_current_pose = pose_desired;        
         }
+    
 
   return true;
 }

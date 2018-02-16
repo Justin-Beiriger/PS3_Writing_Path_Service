@@ -35,27 +35,45 @@ int main(int argc, char **argv) {
     //create some path points...this should be done by some intelligent algorithm, but we'll hard-code it here
     geometry_msgs::PoseStamped pose_stamped;
     geometry_msgs::Pose pose;
-    pose.position.x = 1.0; // say desired x-coord is 1
+    pose.position.x = 3.0; // first desired x-coord is 3
     pose.position.y = 0.0;
     pose.position.z = 0.0; // let's hope so!
-    pose.orientation.x = 0.0; //always, for motion in horizontal plane
-    pose.orientation.y = 0.0; // ditto
-    pose.orientation.z = 0.0; // implies oriented at yaw=0, i.e. along x axis
-    pose.orientation.w = 1.0; //sum of squares of all components of unit quaternion is 1
+    quat = convertPlanarPhi2Quaternion(1.571);
+    pose_stamped.pose.orientation = quat;
     pose_stamped.pose = pose;
     path_srv.request.nav_path.poses.push_back(pose_stamped);
     
     // some more poses...
-    quat = convertPlanarPhi2Quaternion(1.57); // get a quaternion corresponding to this heading
-    pose_stamped.pose.orientation = quat;   
-    pose_stamped.pose.position.y=1.0; // say desired y-coord is 1.0
+    quat = convertPlanarPhi2Quaternion(0); // get a quaternion corresponding to this heading
+    pose_stamped.pose.orientation = quat;
+    pose_stamped.pose.position.y = 3.0; // desired y-coord is 3.0
     path_srv.request.nav_path.poses.push_back(pose_stamped);
     
-    quat = convertPlanarPhi2Quaternion(3.14);
-    pose_stamped.pose.orientation = quat;  
-    //desired position is not updated...just the desired heading  
+    quat = convertPlanarPhi2Quaternion(1.571);
+    pose_stamped.pose.orientation = quat;
+    pose_stamped.pose.position.x = 6.5; // desired x-coord is 6.5
+    path_srv.request.nav_path.poses.push_back(pose_stamped);
+    
+    quat = convertPlanarPhi2Quaternion(3.14159);
+    pose_stamped.pose.orientation = quat;
+    pose_stamped.pose.position.y = 5.2; // desired x-coord is 6.5
+    path_srv.request.nav_path.poses.push_back(pose_stamped);
+    
+    quat = convertPlanarPhi2Quaternion(1.571);
+    pose_stamped.pose.orientation = quat;
+    pose_stamped.pose.position.x = 3.0; // desired x-coord is 6.5
+    path_srv.request.nav_path.poses.push_back(pose_stamped);
+    
+    quat = convertPlanarPhi2Quaternion(3.14159);
+    pose_stamped.pose.orientation = quat;
+    pose_stamped.pose.position.y = 12.0; // desired x-coord is 6.5
+    path_srv.request.nav_path.poses.push_back(pose_stamped);
+    
+    quat = convertPlanarPhi2Quaternion(3.14159);
+    pose_stamped.pose.orientation = quat;
+    pose_stamped.pose.position.x = 0; // desired x-coord is 6.5
     path_srv.request.nav_path.poses.push_back(pose_stamped);
     client.call(path_srv);
-
+    
     return 0;
 }
